@@ -8,22 +8,26 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v3  # Upgraded to v3 to use the latest Node.js version
+      - name: Remove extraheader from Git config
+        run: git config --global --unset-all http.https://github.com/.extraheader || true
 
-      # Replaced set-output with environment files
+      - uses: actions/checkout@v3  # Compatible with Node.js 20
+
+      # Get Date and use environment files instead of set-output
       - name: Get Date
         id: get-date
-        run: |
-          echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_ENV
+        run: echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_ENV
         shell: bash
 
+      # Cache Buildozer global directory
       - name: Cache Buildozer global directory
-        uses: actions/cache@v3  # Upgraded to v3
+        uses: actions/cache@v3  # Compatible with Node.js 20
         with:
-          path: .buildozer_global
+          path: ~/.buildozer
           key: buildozer-global-${{ hashFiles('buildozer.spec') }}
 
-      - uses: actions/cache@v3  # Upgraded to v3
+      # Cache local build directory
+      - uses: actions/cache@v3  # Compatible with Node.js 20
         with:
           path: .buildozer
           key: ${{ runner.os }}-${{ env.date }}-${{ hashFiles('buildozer.spec') }}
@@ -32,20 +36,15 @@ jobs:
         uses: ArtemSBulgakov/buildozer-action@v1
         id: buildozer
         with:
-          command: buildozer android debug
+          command: android debug
           buildozer_version: stable
 
-      # Reset Git config to avoid warnings
-      - name: Remove extraheader from git config
-        run: |
-          git config --global --unset-all http.https://github.com/.extraheader || true
-
-      # Use updated upload-artifact action
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3  # Updated to v3
+        uses: actions/upload-artifact@v3
         with:
           name: package
           path: ${{ steps.buildozer.outputs.filename }}
+
 
 
 
